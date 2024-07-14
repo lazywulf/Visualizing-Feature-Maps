@@ -2,15 +2,19 @@ import torch
 import timm
 from torch import nn, optim
 from torch.utils.data import DataLoader
+import cv2 as cv
+import numpy as np
 from tqdm import tqdm
 
 from CNN import CNN
 from Dataset import MyDataset
+from util import transform_cv2mod
+import argparse
 
 PATH = "./input/"
 LR = 3e-4
 batch_size = 32
-epoch_num = 20
+epoch_num = 10
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 data = MyDataset(PATH + "train_label.csv", PATH + "data/data/")
@@ -69,6 +73,19 @@ def validate(model, dataset):
     return avg_acc, avg_loss
 
 
+@torch.no_grad()
+def test(model, target_img):
+    img = cv.imread(target_img)
+    img = cv.resize(img, (128, 128), interpolation=cv.INTER_LINEAR)
+
+    model.cpu()
+    model.eval()
+    img = torch.Tensor(transform_cv2mod(img)).unsqueeze(0)
+
+    y = "dog" if model(img)[0][0] > 0.5 else "cat"
+    print(y)
+
+
 def get_acc(model, img, label):
     model.eval()
     output = model(img)
@@ -88,6 +105,11 @@ def main(model, filename):
 
 
 if __name__ == "__main__":
-    model1 = CNN()
-    model2 = timm.create_model("resnet50d", pretrained=True, num_classes=1)
-    main(model2, "resnet50d.m")
+    parser = argparse.ArgumentParser(description='Train and test a CNN model')
+    parser.add_argument('--model', type=str, default='CNN', help='Model architecture')
+    parser.add_argument('--filename', type=str, default='mymodel.m', help='Model filename')
+    args = parser.parse_args()
+
+    model1 = CNN() if args.model == 'CNN' else timm.create_model(args.model, pretrained=True, num_classes=1)
+    main(model1, args.filename)
+    test(model1, "./input/test/test.jpg")

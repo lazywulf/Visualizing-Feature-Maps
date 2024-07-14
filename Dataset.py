@@ -3,6 +3,7 @@ import numpy as np
 import cv2 as cv
 import pandas as pd
 from torch.utils.data import Dataset
+from util import transform_cv2mod
 
 
 class MyDataset(Dataset):
@@ -13,8 +14,7 @@ class MyDataset(Dataset):
     def __getitem__(self, index):
         img_path = os.path.join(self.img_dir, self.img_label.iloc[index, 0])
         img = cv.imread(img_path)
-        np.asarray(img, order="C")
-        img = np.swapaxes(img, 0, 2)
+        img = transform_cv2mod(img)
         return img, self.img_label.iloc[index, 1]
     
     def __len__(self):
