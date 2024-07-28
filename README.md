@@ -18,6 +18,8 @@ This repository contains an implementation of a Convolutional Neural Network (CN
 ├── requirements.txt
 └── README.md
 ```
+Dataset: https://www.kaggle.com/datasets/lazywulf/cats-and-dogs/data
+
 
 ## Files and Directories
 - `save/`: Directory to save the trained model.
