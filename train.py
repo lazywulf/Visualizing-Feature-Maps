@@ -5,23 +5,15 @@ from torch.utils.data import DataLoader
 import cv2 as cv
 import numpy as np
 from tqdm import tqdm
-
+import argparse
 from CNN import CNN
 from Dataset import MyDataset
 from util import transform_cv2mod
-import argparse
+import os
 
-PATH = "./input/"
-LR = 3e-4
-batch_size = 32
-epoch_num = 10
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-data = MyDataset(PATH + "train_label.csv", PATH + "data/data/")
-val = MyDataset(PATH + "test_label.csv", PATH + "test/test/")
-
-
-def train(model, dataset):
+def train(model, dataset, batch_size, LR):
     model.to(device).train()
     batch_count, total_acc, total_loss = 0, 0, 0
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -45,12 +37,12 @@ def train(model, dataset):
         batch_count += 1
 
     avg_loss, avg_acc = total_loss / batch_count, total_acc / batch_count
-    print(f"Train: avg_loss={avg_loss} avg_acc={avg_acc}")
+    print(f"Train: avg_loss={avg_loss:.4f} avg_acc={avg_acc:.2f}")
     return avg_acc, avg_loss
 
 
 @torch.no_grad()
-def validate(model, dataset):
+def validate(model, dataset, batch_size):
     model.eval()
     batch_count, total_acc, total_loss = 0, 0, 0
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
@@ -69,7 +61,7 @@ def validate(model, dataset):
         batch_count += 1
 
     avg_loss, avg_acc = total_loss / batch_count, total_acc / batch_count
-    print(f"Validate: avg_loss={avg_loss} avg_acc={avg_acc}")
+    print(f"Validate: avg_loss={avg_loss:.4f} avg_acc={avg_acc:.2f}")
     return avg_acc, avg_loss
 
 
@@ -94,22 +86,32 @@ def get_acc(model, img, label):
     return correct / total
 
 
-def main(model, filename):
+def main(model, filename, data_path, val_path, test_img, batch_size, LR, epoch_num):
+    data = MyDataset(os.path.join(data_path, "train_label.csv"), data_path)
+    val = MyDataset(os.path.join(val_path, "test_label.csv"), val_path)
+
     acc = 0
     for i in range(epoch_num):
         print(f"--- epoch {i} ---")
-        train(model, data)
-        temp, _ = validate(model, val)
+        train(model, data, batch_size, LR)
+        temp, _ = validate(model, val, batch_size)
         if acc < temp:
             torch.save(model, f"save/{filename}")
+
+    test(model, test_img)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train and test a CNN model')
-    parser.add_argument('--model', type=str, default='CNN', help='Model architecture')
-    parser.add_argument('--filename', type=str, default='mymodel.m', help='Model filename')
+    parser.add_argument('-m', '--model', type=str, default='CNN', help='Model architecture')
+    parser.add_argument('-f', '--filename', type=str, default='mymodel.m', help='Model filename')
+    parser.add_argument('-d', '--data_path', type=str, default='./data/train', help='Path to the data folder')
+    parser.add_argument('-v', '--val_path', type=str, default='./data/test', help='Path to the validation folder')
+    parser.add_argument('-t', '--test_img', type=str, default='./data/test.jpg', help='Path to the test image')
+    parser.add_argument('-b', '--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--lr', type=float, default=3e-4, help='Learning rate')
+    parser.add_argument('-e', '--epoch_num', type=int, default=10, help='Number of epochs')
     args = parser.parse_args()
 
     model1 = CNN() if args.model == 'CNN' else timm.create_model(args.model, pretrained=True, num_classes=1)
-    main(model1, args.filename)
-    test(model1, "./input/test/test.jpg")
+    main(model1, args.filename, args.data_path, args.val_path, args.test_img, args.batch_size, args.LR, args.epoch_num)

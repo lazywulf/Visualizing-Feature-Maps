@@ -1,20 +1,21 @@
+import argparse
 import torch
 import numpy as np
-import torch.nn as nn
-import matplotlib.pyplot as plt
 import cv2 as cv
 from util import transform_cv2mod
 
+import torch.nn as nn
+import matplotlib.pyplot as plt
 
-def read_image():
-    img = cv.imread("./input/test/test.jpg")
+def read_image(image_path):
+    img = cv.imread(image_path)
     img = cv.resize(img, (128, 128), interpolation=cv.INTER_LINEAR)
     plt.imshow(img)
     plt.show()
     return img
 
-def load_model():
-    model = torch.load("./save/mymodel.m")
+def load_model(model_path):
+    model = torch.load(model_path)
     model = model.cpu()
     return model
 
@@ -50,10 +51,10 @@ def show_feature_maps(processed):
         plt.title(name)
         plt.show()
 
-def main():
-    img = read_image()
+def main(args):
+    img = read_image(args.image_path)
     img = transform_image(img) 
-    model = load_model()
+    model = load_model(args.model_path)
     conv_layers = extract_conv(model)
 
     outputs = {}
@@ -65,4 +66,8 @@ def main():
     show_feature_maps(processed)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Feature Visualization')
+    parser.add_argument('--image_path', type=str, default='./input/test/test.jpg', help='path to the input image')
+    parser.add_argument('--model_path', type=str, default='./save/mymodel.m', help='path to the saved model')
+    args = parser.parse_args()
+    main(args)
