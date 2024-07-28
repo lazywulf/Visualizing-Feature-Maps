@@ -1,4 +1,3 @@
-Your Repo Name
 # Convolutional Neural Network (CNN) Implementation & Visualizing Feature Maps of Models
 
 This repository contains an implementation of a Convolutional Neural Network (CNN) using PyTorch for image processing tasks. The project includes functionalities for image augmentation, training, validating, and testing the model, as well as extracting and visualizing convolutional feature maps from a pre-trained model.
